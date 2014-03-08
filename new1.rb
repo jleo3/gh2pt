@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require "pry"
 require "dotenv"
 require "rubygems"
 require "octokit"
@@ -23,16 +24,15 @@ PivotalTracker::Client.use_ssl = PIVOTAL_PROJECT_USE_SSL
 
 pivotal_project = PivotalTracker::Project.find(PIVOTAL_PROJECT_ID)
 github = Octokit::Client.new(:login => GITHUB_LOGIN, :password => GITHUB_PASSWORD)
-issues_filter = 'feature' # update filter as appropriate
-story_type = 'feature' # 'bug', 'feature', 'chore', 'release'. Omitting makes it a feature.
-story_current_state = 'unscheduled' # 'unscheduled', 'started', 'accepted', 'delivered', 'finished', 'unscheduled'.
-                                    # 'unstarted' puts it in 'Current' if Commit Mode is on; 'Backlog' if Auto Mode is on.
-                                    # Omitting puts it in the Icebox.
+issues_filter = 'task' # update filter with 'feature', 'task', 'bug'
+story_type = 'chore' # 'bug', 'feature', 'chore'
+story_current_state = 'unscheduled' 
 total_issues = 0
 page_issues = 1
 issues = github.list_issues(GITHUB_REPO, { :page => page_issues, :labels => issues_filter } )
 
 while issues.count > 0
+  
   issues.each do |issue|
     total_issues += 1
     comments = github.issue_comments(GITHUB_REPO, issue.number)
@@ -42,6 +42,22 @@ while issues.count > 0
     end
 
     puts "issue #{total_issues}: #{issue.number} #{issue.title}, with #{comments.count} comments"
+    story = pivotal_project.stories.create(
+              :name => issue.title,
+              :description => issue.body,
+              :created_at => issue.created_at,
+              :labels => labels,
+              :story_type => story_type,     
+              :current_state => story_current_state)
+
+    story.notes.create(text: "Migrated from #{issue.html_url}")
+
+    comments.each do |comment|
+      story.notes.create(
+        text: comment.body.gsub(/\r\n\r\n/, "\n\n"),
+        author: comment.user.login,
+        noted_at: comment.created_at)
+    end
   end
 
   page_issues += 1
