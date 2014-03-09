@@ -1,0 +1,5 @@
+user:
+  name: foo bar
+  email: foo@bar.com
+  initials: fb
+  role: Member

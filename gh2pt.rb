@@ -2,7 +2,6 @@
 
 require "pry"
 require "dotenv"
-require "rubygems"
 require "octokit"
 require "pivotal-tracker"
 require "json"
