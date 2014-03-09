@@ -3,3 +3,4 @@ user:
   email: foo@bar.com
   initials: fb
   role: Member
+  github_login: fbar
